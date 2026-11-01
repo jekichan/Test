@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculator</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1c1c1e;font-family:system-ui,sans-serif}
+  .calc{width:320px;padding:16px;background:#000;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .display{height:90px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;padding:8px 12px;color:#fff;overflow:hidden}
+  .expr{font-size:16px;color:#888;min-height:20px}
+  .value{font-size:42px;word-break:break-all;text-align:right}
+  .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+  button{height:64px;border:0;border-radius:50%;font-size:22px;color:#fff;background:#333;cursor:pointer}
+  button:active{filter:brightness(1.4)}
+  .fn{background:#a5a5a5;color:#000}
+  .op{background:#ff9f0a}
+  .zero{grid-column:span 2;border-radius:32px;text-align:left;padding-left:26px}
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="display"><div class="expr" id="expr"></div><div class="value" id="value">0</div></div>
+  <div class="keys" id="keys">
+    <button class="fn" data-k="C">C</button>
+    <button class="fn" data-k="±">±</button>
+    <button class="fn" data-k="%">%</button>
+    <button class="op" data-k="/">÷</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button class="op" data-k="*">×</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button class="op" data-k="-">−</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button class="op" data-k="+">+</button>
+    <button class="zero" data-k="0">0</button>
+    <button data-k=".">.</button>
+    <button class="op" data-k="=">=</button>
+  </div>
+</div>
+<script>
+  let cur = "0", prev = null, op = null, fresh = false;
+  const sym = {"/":"÷","*":"×","-":"−","+":"+"};
+  const $v = document.getElementById("value"), $e = document.getElementById("expr");
+
+  function calc(a, b, o) {
+    a = parseFloat(a); b = parseFloat(b);
+    let r = o === "+" ? a + b : o === "-" ? a - b : o === "*" ? a * b : (b === 0 ? NaN : a / b);
+    return isNaN(r) ? "Error" : String(parseFloat(r.toPrecision(12)));
+  }
+  function render() {
+    $v.textContent = cur;
+    $e.textContent = op ? prev + " " + sym[op] : "";
+  }
+  function press(k) {
+    if (cur === "Error" && k !== "C") return;
+    if (/\d/.test(k)) {
+      cur = (cur === "0" || fresh) ? k : cur + k; fresh = false;
+    } else if (k === ".") {
+      if (fresh) { cur = "0."; fresh = false; } else if (!cur.includes(".")) cur += ".";
+    } else if (k === "C") {
+      cur = "0"; prev = null; op = null; fresh = false;
+    } else if (k === "±") {
+      if (cur !== "0") cur = cur.startsWith("-") ? cur.slice(1) : "-" + cur;
+    } else if (k === "%") {
+      cur = String(parseFloat(cur) / 100);
+    } else if (k === "=") {
+      if (op) { cur = calc(prev, cur, op); prev = null; op = null; fresh = true; }
+    } else {
+      if (op && !fresh) cur = calc(prev, cur, op);
+      prev = cur; op = k; fresh = true;
+    }
+    render();
+  }
+  document.getElementById("keys").addEventListener("click", e => {
+    const k = e.target.dataset.k; if (k) press(k);
+  });
+  document.addEventListener("keydown", e => {
+    if (/^[0-9.+\-*/]$/.test(e.key)) press(e.key);
+    else if (e.key === "Enter" || e.key === "=") press("=");
+    else if (e.key === "Escape") press("C");
+    else if (e.key === "Backspace") { cur = cur.length > 1 && cur !== "Error" ? cur.slice(0,-1) : "0"; render(); }
+  });
+</script>
+</body>
+</html>
